@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terminal Cheat Sheet | 10 Essential Shell Commands</title>
+<style>
+  :root{
+    --bg: #0c0d18;
+    --surface: #14152a;
+    --surface-hi: #1c1e3a;
+    --line: #2a2c4d;
+    --text: #e9eafc;
+    --muted: #8c8fb8;
+    --magenta: #ff5fa2;
+    --cyan: #57e0d8;
+    --yellow: #ffd166;
+    --display: "Space Grotesk", "Avenir Next", sans-serif;
+    --mono: "JetBrains Mono", "Fira Code", monospace;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 15% -10%, rgba(255,95,162,0.12), transparent 45%),
+      radial-gradient(circle at 90% 0%, rgba(87,224,216,0.10), transparent 40%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    min-height: 100vh;
+  }
+
+  .wrap{
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 56px 22px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    margin-bottom: 36px;
+  }
+  .kicker{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin: 0 0 14px;
+  }
+  h1{
+    font-size: clamp(28px, 4.6vw, 46px);
+    line-height: 1.15;
+    margin: 0 0 16px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  h1 span{ color: var(--magenta); }
+  header p.lede{
+    max-width: 60ch;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .hint{
+    margin-top: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--yellow);
+    background: rgba(255,209,102,0.08);
+    border: 1px solid rgba(255,209,102,0.25);
+    padding: 7px 12px;
+    border-radius: 20px;
+  }
+  .hint .pulse{
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--yellow);
+    animation: pulse 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse{
+    0%,100%{ opacity: 1; transform: scale(1); }
+    50%{ opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* ---------- Layout: grid of buttons + console ---------- */
+  .console-layout{
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+  }
+  @media (max-width: 860px){
+    .console-layout{ grid-template-columns: 1fr; }
+  }
+
+  .palette{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 480px){
+    .palette{ grid-template-columns: 1fr; }
+  }
+
+  button.cmd-btn{
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color .15s ease, background .15s ease, transform .1s ease;
+  }
+  button.cmd-btn:hover{
+    border-color: var(--cyan);
+    background: var(--surface-hi);
+  }
+  button.cmd-btn:active{
+    transform: scale(0.98);
+  }
+  button.cmd-btn:focus-visible{
+    outline: 2px solid var(--magenta);
+    outline-offset: 2px;
+  }
+  button.cmd-btn.active{
+    border-color: var(--magenta);
+    background: linear-gradient(135deg, rgba(255,95,162,0.14), rgba(87,224,216,0.08));
+  }
+  .cmd-btn .row1{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .cmd-btn .num{
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .cmd-btn .name{
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .cmd-btn.active .name{ color: var(--magenta); }
+  .cmd-btn .tag{
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  /* ---------- Console output panel ---------- */
+  .console{
+    position: sticky;
+    top: 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+  }
+  .console-bar{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,0.02);
+  }
+  .console-bar .led{ width:9px; height:9px; border-radius:50%; }
+  .console-bar .led.r{ background:#ff6464; }
+  .console-bar .led.y{ background:#ffd166; }
+  .console-bar .led.g{ background:#57e0d8; }
+  .console-bar .file{
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+
+  .console-body{
+    padding: 22px 22px 26px;
+    flex: 1;
+  }
+
+  .console-prompt{
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .console-prompt .user{ color: var(--cyan); }
+  .console-prompt .sep{ color: var(--muted); }
+
+  .console-cmd{
+    font-family: var(--mono);
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 18px;
+    min-height: 1.3em;
+  }
+  .console-cmd .caret{
+    display:inline-block;
+    width: 2px;
+    height: 0.9em;
+    background: var(--magenta);
+    margin-left: 3px;
+    vertical-align: -2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .console-desc{
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text);
+    margin: 0 0 18px;
+  }
+  .console-desc code{
+    font-family: var(--mono);
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--cyan);
+    font-size: 13.5px;
+  }
+
+  .console-example{
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid var(--magenta);
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+  }
+  .console-example .label{
+    display:block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--magenta);
+    margin-bottom: 6px;
+  }
+  .console-example p{
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .console-example code{
+    font-family: var(--mono);
+    color: var(--yellow);
+    background: none;
+    font-size: 12.5px;
+  }
+
+  .console-footer{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    padding: 12px 22px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .nav-btn{
+    all: unset;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--cyan);
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .nav-btn:hover{ border-color: var(--cyan); }
+  .nav-btn:focus-visible{ outline: 2px solid var(--magenta); outline-offset: 2px; }
+  .all-commands{
+    margin-top:70px;
+    border-top:1px solid var(--line);
+    padding-top:40px;
+}
+
+.all-commands h2{
+    margin-bottom:30px;
+    color:var(--cyan);
+}
+
+.all-commands article{
+    margin-bottom:28px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line);
+}
+
+.all-commands h3{
+    font-family:var(--mono);
+    color:var(--magenta);
+    margin-bottom:10px;
+}
+
+.all-commands p{
+    line-height:1.7;
+    color:var(--text);
+}
+
+.all-commands code{
+    color:var(--yellow);
+}
+  /* ---------- Footer ---------- */
+  .pagefoot{
+    margin-top: 50px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .pagefoot strong{ color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <p class="kicker">Module 1 // Terminal Basics</p>
+    <h1>10 Essential Shell Commands <span>Every Beginner Should Know</span></h1>
+    <p class="lede">A practical terminal cheat sheet featuring the ten shell commands you'll use most often, along with simple explanations and real-world examples.</p>
+    <span class="hint"><span class="pulse"></span> tap any command below to run it in the console →</span>
+  </header>
+
+  <div class="console-layout">
+
+    <div class="palette" id="palette"></div>
+
+    <div class="console">
+      <div class="console-bar">
+        <span class="led r"></span><span class="led y"></span><span class="led g"></span>
+        <span class="file">cheatsheet.sh</span>
+      </div>
+      <div class="console-body">
+        <p class="console-prompt"><span class="user">hani@mits</span><span class="sep">:~$</span></p>
+        <p class="console-cmd" id="outCmd">pwd<span class="caret"></span></p>
+        <p class="console-desc" id="outDesc"></p>
+        <div class="console-example">
+          <span class="label">Reach for it when</span>
+          <p id="outExample"></p>
+        </div>
+      </div>
+      <div class="console-footer">
+        <button class="nav-btn" id="prevBtn">&larr; prev</button>
+        <span id="outCounter">01 / 10</span>
+        <button class="nav-btn" id="nextBtn">next &rarr;</button>
+      </div>
+    </div>
+
+  </div>
+  <section class="all-commands">
+  <h2>Quick Terminal Cheat Sheet</h2>
+
+  <article>
+    <h3>pwd</h3>
+    <p><strong>Description:</strong> Shows your current working directory.</p>
+    <p><strong>Example:</strong> Use <code>pwd</code> to confirm which project folder you're in.</p>
+  </article>
+
+  <article>
+    <h3>ls -la</h3>
+    <p><strong>Description:</strong> Lists all files, including hidden files.</p>
+    <p><strong>Example:</strong> Run <code>ls -la</code> after cloning a Git repository.</p>
+  </article>
+
+  <article>
+    <h3>cd</h3>
+    <p><strong>Description:</strong> Changes the current directory.</p>
+    <p><strong>Example:</strong> Move into your project folder using <code>cd portfolio</code>.</p>
+  </article>
+
+  <article>
+    <h3>mkdir</h3>
+    <p><strong>Description:</strong> Creates a new directory.</p>
+    <p><strong>Example:</strong> Run <code>mkdir portfolio</code> to create a project folder.</p>
+  </article>
+
+  <article>
+    <h3>touch</h3>
+    <p><strong>Description:</strong> Creates a new empty file.</p>
+    <p><strong>Example:</strong> Run <code>touch index.html</code> to create a webpage.</p>
+  </article>
+
+  <article>
+    <h3>cp</h3>
+    <p><strong>Description:</strong> Copies files or folders.</p>
+    <p><strong>Example:</strong> Use <code>cp report.txt backup.txt</code> to make a backup.</p>
+  </article>
+
+  <article>
+    <h3>mv</h3>
+    <p><strong>Description:</strong> Moves or renames files.</p>
+    <p><strong>Example:</strong> Rename a file using <code>mv old.txt new.txt</code>.</p>
+  </article>
+
+  <article>
+    <h3>rm</h3>
+    <p><strong>Description:</strong> Deletes files or folders.</p>
+    <p><strong>Example:</strong> Delete an unwanted file using <code>rm notes.txt</code>.</p>
+  </article>
+
+  <article>
+    <h3>grep</h3>
+    <p><strong>Description:</strong> Searches for matching text.</p>
+    <p><strong>Example:</strong> Run <code>ls | grep ".html"</code> to find HTML files.</p>
+  </article>
+
+  <article>
+    <h3>chmod +x</h3>
+    <p><strong>Description:</strong> Makes a script executable.</p>
+    <p><strong>Example:</strong> Run <code>chmod +x setup.sh</code> before executing <code>./setup.sh</code>.</p>
+  </article>
+</section>
+
+<p class="pagefoot">
+Built as a beginner-friendly <strong>Terminal Cheat Sheet</strong> • Happy Coding 🚀
+</p>
+
+</div>
+
+<script>
+  const commands = [
+    {
+      name: "pwd",
+      tag: "where am I",
+      desc: 'Prints the full path of the folder you\'re standing in right now — your "you are here" marker.',
+      example: 'You\'ve got three tabs open for three projects and just typed into the wrong one. Run <code>pwd</code> before anything destructive — always.'
+    },
+    {
+      name: "ls -la",
+      tag: "show everything",
+      desc: 'Lists everything in the current folder, including hidden dotfiles (<code>-a</code>), with permissions, size, and owner (<code>-l</code>).',
+      example: 'You just cloned a repo and want to check for a hidden <code>.env</code> or <code>.gitignore</code> before poking around.'
+    },
+    {
+      name: "cd",
+      tag: "move around",
+      desc: 'Moves you into a different folder. <code>cd ..</code> climbs up one level; <code>cd -</code> jumps straight back to wherever you just were.',
+      example: 'Bouncing between <code>~/projects/ocr-pipeline</code> and <code>~/projects/loan-xai</code> all afternoon — <code>cd -</code> saves the retyping.'
+    },
+   {
+      name: "mkdir",
+      tag: "create folder",
+      desc: 'Creates a new directory.',
+      example: 'Starting a new project? Run <code>mkdir portfolio</code> to create a folder for your files.'
+   },
+   {
+      name: "touch",
+      tag: "create files",
+      desc: 'Creates a new empty file instantly. Great for starting HTML, CSS, JavaScript, Markdown, or configuration files.',
+      example: 'Starting a new webpage? Run <code>touch index.html style.css script.js</code> instead of creating each file manually.'
+    },
+    {
+      name: "cp",
+      tag: "copy files",
+      desc: 'Copies files or directories.',
+      example: 'Create a backup with <code>cp report.txt backup.txt</code>.'
+    },
+    {
+      name: "mv",
+      tag: "move or rename",
+      desc: 'Relocates a file or folder — and doubles as "rename," since renaming is just moving to a new name in the same spot.',
+      example: 'Cleaning a messy <code>downloads/</code> folder of CSVs before a benchmarking run: <code>mv eval_v2_final_FINAL.csv data/eval.csv</code>.'
+    },
+    {
+      name: "rm",
+      tag: "delete files",
+      desc: 'Deletes files or folders.',
+      example: 'Remove an unwanted file using <code>rm notes.txt</code>.'
+    },
+    {
+      name: "grep",
+      tag: "search text",
+      desc: 'Searches for matching text in files or command output.',
+      example: 'Find HTML files with <code>ls | grep ".html"</code>.'
+    },
+    {
+      name: "chmod +x",
+      tag: "make executable",
+      desc: 'Makes a script executable so it can be run directly.',
+      example: 'Run <code>chmod +x setup.sh</code> before executing <code>./setup.sh</code>.'
+    }
+  ];
+
+  const palette = document.getElementById('palette');
+  const outCmd = document.getElementById('outCmd');
+  const outDesc = document.getElementById('outDesc');
+  const outExample = document.getElementById('outExample');
+  const outCounter = document.getElementById('outCounter');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  let current = 0;
+  let buttons = [];
+
+  commands.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'cmd-btn';
+    btn.type = 'button';
+    btn.innerHTML =
+      '<span class="row1"><span class="name">' + c.name + '</span><span class="num">' +
+      String(i + 1).padStart(2, '0') + '</span></span>' +
+      '<span class="tag">' + c.tag + '</span>';
+    btn.addEventListener('click', () => render(i));
+    palette.appendChild(btn);
+    buttons.push(btn);
+  });
+
+  function render(i){
+    current = i;
+    const c = commands[i];
+
+    buttons.forEach(b => b.classList.remove('active'));
+    buttons[i].classList.add('active');
+
+    outDesc.innerHTML = c.desc;
+    outExample.innerHTML = c.example;
+    outCounter.textContent = String(i + 1).padStart(2, '0') + ' / ' + commands.length;
+
+    // type-on effect for the command line
+    let txt = c.name;
+    let j = 0;
+    outCmd.innerHTML = '<span class="caret"></span>';
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion){
+      outCmd.innerHTML = txt + '<span class="caret"></span>';
+      return;
+    }
+    const timer = setInterval(() => {
+      j++;
+      outCmd.innerHTML = txt.slice(0, j) + '<span class="caret"></span>';
+      if (j >= txt.length) clearInterval(timer);
+    }, 38);
+  }
+
+  prevBtn.addEventListener('click', () => {
+    render((current - 1 + commands.length) % commands.length);
+  });
+  nextBtn.addEventListener('click', () => {
+    render((current + 1) % commands.length);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') render((current + 1) % commands.length);
+    if (e.key === 'ArrowLeft') render((current - 1 + commands.length) % commands.length);
+  });
+
+  render(0);
+</script>
+
+</body>
+</html>
